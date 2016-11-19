@@ -1,0 +1,30 @@
+@import services.Comic
+
+@*
+ * This template takes a single argument, a String containing a
+ * message to display.
+ *@
+@(comics: Seq[Comic])
+
+@main("Comics") {
+    <div class="container">
+        <h1>Comics</h1>
+        <p>Aggregates of the latest 30 strips of various webcomics, displayed in a single page.</p>
+        @for(comic <- comics) {
+            <div class="row">
+                <div class="col-xs-12">
+                    <h3 class="comic-title">@comic.title</h3>
+                </div>
+                <div class="col-xs-12">
+                    <h6 class="text-muted">@comic.artist &#183; <a href="@comic.originalUrl" target="_blank">@comic.date.toString("yyyy-MM-dd")</a></h6>
+                </div>
+                <div class="col-xs-12">
+                    <img    class="b-lazy img-responsive placeholder"
+                            data-src="@comic.imgUrl"
+                            height="250px"
+                            alt="@comic.title">
+                </div>
+            </div>
+        }
+    </div>
+}
