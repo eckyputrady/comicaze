@@ -14,7 +14,7 @@ import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.model.Element
 
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 
 /**
@@ -39,19 +39,22 @@ class Comics @Inject()(system: ActorSystem)(implicit executor: ExecutionContext)
   private def getCalvinAndHobbesComics(): Future[Seq[Comic]] = {
     val now = DateTime.now()
     val dates = (0 to 30) map { now.minusDays }
-    Future.sequence(dates map { getCalvinAndHobbesComicAtDate })
+    Future  .sequence(dates map { getCalvinAndHobbesComicAtDate })
+            .map(_ collect { case Success(x) => x })
   }
 
-  private def getCalvinAndHobbesComicAtDate(dateTime: DateTime): Future[Comic] = Future {
-    val url = s"https://http://www.gocomics.com/calvinandhobbes/${dateTime.toString("yyyy/MM/dd")}"
-    val doc = JsoupBrowser().get(url)
-    Comic(
-      "Calvin and Hobbes",
-      "Calvin and Hobbes",
-      dateTime,
-      doc >> attr("src")(".strip"),
-      url
-    )
+  private def getCalvinAndHobbesComicAtDate(dateTime: DateTime): Future[Try[Comic]] = Future {
+    Try {
+      val url = s"http://www.gocomics.com/calvinandhobbes/${dateTime.toString("yyyy/MM/dd")}"
+      val doc = JsoupBrowser().get(url)
+      Comic(
+        "Calvin and Hobbes",
+        "Calvin and Hobbes",
+        dateTime,
+        doc >> attr("src")(".strip"),
+        url
+      )
+    }
   }
 
   // Foxtrot
@@ -191,6 +194,7 @@ class Comics @Inject()(system: ActorSystem)(implicit executor: ExecutionContext)
   }
 
   def updateList():Unit = {
+    Logger.info("Start scraping comics")
     val start = System.currentTimeMillis()
     getUpdates() onComplete {
       case Success(comics) => {
