@@ -30,7 +30,7 @@ case class Comic(artist: String, title: String, date: DateTime, imgUrl: String, 
 class Comics @Inject()(system: ActorSystem)(implicit executor: ExecutionContext) extends ComicRepo {
   private var list: Seq[Comic] = List()
 
-  system.scheduler.schedule(0.seconds, 1.hour)(updateList)
+//  system.scheduler.schedule(0.seconds, 1.hour)(updateList)
 
   override def getComics(): Seq[Comic] = list
 
