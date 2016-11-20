@@ -9,6 +9,3 @@ Supported webcomics:
 3. Dilbert
 4. Foxtrot.com
 5. Calvin & Hobbes
-6. Abstruse Goose
-7. Incidental Comics
-8. PHD Comics

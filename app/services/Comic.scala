@@ -30,9 +30,72 @@ case class Comic(artist: String, title: String, date: DateTime, imgUrl: String, 
 class Comics @Inject()(system: ActorSystem)(implicit executor: ExecutionContext) extends ComicRepo {
   private var list: Seq[Comic] = List()
 
-//  system.scheduler.schedule(0.seconds, 1.hour)(updateList)
+  system.scheduler.schedule(0.seconds, 1.hour)(updateList)
 
   override def getComics(): Seq[Comic] = list
+
+  // Calvin & Hobbes
+
+  private def getCalvinAndHobbesComics(): Future[Seq[Comic]] = {
+    val now = DateTime.now()
+    val dates = (0 to 30) map { now.minusDays }
+    Future.sequence(dates map { getCalvinAndHobbesComicAtDate })
+  }
+
+  private def getCalvinAndHobbesComicAtDate(dateTime: DateTime): Future[Comic] = Future {
+    val url = s"https://http://www.gocomics.com/calvinandhobbes/${dateTime.toString("yyyy/MM/dd")}"
+    val doc = JsoupBrowser().get(url)
+    Comic(
+      "Calvin and Hobbes",
+      "Calvin and Hobbes",
+      dateTime,
+      doc >> attr("src")(".strip"),
+      url
+    )
+  }
+
+  // Foxtrot
+
+  private def getFoxtrotComics(): Future[Seq[Comic]] = {
+    val pages = 1 to 5
+    val comicUrls: Future[Seq[String]] = {
+      val urlsInPages: Seq[Future[Seq[String]]] = pages.map(getFoxtrotComicUrlsAtPage)
+      Future.sequence(urlsInPages).map(_.flatten)
+    }
+    val comics: Future[Seq[Future[Comic]]] = comicUrls map { _.map(scrapFoxtrotComic) }
+
+    comics.map(Future.sequence(_)).flatMap(x => x)
+  }
+
+  private def getFoxtrotComicUrlsAtPage(page: Int): Future[Seq[String]] = Future {
+    val url = s"http://www.foxtrot.com/page/$page/"
+    val doc = JsoupBrowser().get(url)
+    val extracteds: Iterable[String] = doc >> attrs("href")(".entry-title > a")
+    extracteds.toSeq
+  }
+
+  private def scrapFoxtrotComic(url: String): Future[Comic] = Future {
+    val doc = JsoupBrowser().get(url)
+    val date: DateTime = {
+      val paths = url.split("/")
+      DateTime.parse(s"${paths(3)}-${paths(4)}-${paths(5)}")
+    }
+
+    Comic(
+      "Foxtrot",
+      doc >> text("h1.entry-newtitle"),
+      date,
+      doc >> attr("src")(".entry-content img"),
+      url
+    )
+  }
+
+  // Incidental Comics
+
+  private def getIncidentalComicsComics(): Future[Seq[Comic]] = Future {
+    // TODO
+    List()
+  }
 
   // Dilbert
 
@@ -120,15 +183,24 @@ class Comics @Inject()(system: ActorSystem)(implicit executor: ExecutionContext)
   //// All
 
   def getUpdates(): Future[Seq[Comic]] = {
-    val allComics = Future.sequence(List(getXkcdUpdates(), getCommitStripUpdates(), getDilbertComics())).map(_.flatten)
+    val allComics = Future.sequence(List(
+      getXkcdUpdates(), getCommitStripUpdates(), getDilbertComics(),
+      getCalvinAndHobbesComics(), getFoxtrotComics(), getIncidentalComicsComics()
+    )).map(_.flatten)
     allComics.map(_.sortBy(_.date)(JodaOrdering.descendingOrdering))
   }
 
-  def updateList():Unit =
+  def updateList():Unit = {
+    val start = System.currentTimeMillis()
     getUpdates() onComplete {
-      case Success(comics) => this.list = comics
+      case Success(comics) => {
+        this.list = comics
+        val durationSec = (System.currentTimeMillis() - start)/1000
+        Logger.info(s"Finished updating comics in ${durationSec}s")
+      }
       case Failure(e) => Logger.warn("Failed to update comics!", e)
     }
+  }
 }
 
 object JodaOrdering {
