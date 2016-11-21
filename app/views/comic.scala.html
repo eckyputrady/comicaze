@@ -1,0 +1,24 @@
+@import services.Comic
+
+@*
+ * This template takes a single argument, a String containing a
+ * message to display.
+ *@
+@(comic: ComicWithShare, title: String, next: Call, prev: Call)
+
+@main(title) {
+        @comicShareMetaBlock(comic)
+    } {
+        @comicBlock(comic)
+
+        <div class="row">
+            <div class="col-xs-12 btn-group btn-group-justified" role="group">
+                <a class="btn btn-default" href="@prev">
+                    <span class="glyphicon glyphicon-chevron-left"></span> Prev Comic
+                </a>
+                <a class="btn btn-default" href="@next">
+                    Next Comic <span class="glyphicon glyphicon-chevron-right"></span>
+                </a>
+            </div>
+        </div>
+    }

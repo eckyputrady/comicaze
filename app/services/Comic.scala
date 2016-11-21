@@ -21,14 +21,35 @@ import scala.util.{Try, Failure, Success}
   * Created by eckyputrady on 11/6/16.
   */
 trait ComicRepo {
+
   def getComics(): Seq[Comic]
+
+  def findOneWithSlug(slug: String): Option[Comic] =
+    getComics().find(_.slug.equals(slug))
+
+  def findNextComic(comic: Comic, delta: Int): Option[Comic] = {
+    val idx = getComics().indexWhere(_.slug.equals(comic.slug))
+    if (idx < 0) {
+      None
+    } else {
+      getComics().lift(idx + delta)
+    }
+  }
 }
 
-case class Comic(artist: String, title: String, date: DateTime, imgUrl: String, originalUrl: String)
+case class Comic(artist: String, title: String, date: DateTime, imgUrl: String, originalUrl: String) {
+  val slug = {
+    val normalizedArtist = artist.toLowerCase.replaceAll("\\s+", "-")
+    val normalizedTitle = title.toLowerCase.replaceAll("\\s+", "-")
+    s"$normalizedArtist-${date.toString("yyyy-MM-dd")}-$normalizedTitle"
+  }
+}
 
 @Singleton
 class Comics @Inject()(system: ActorSystem)(implicit executor: ExecutionContext) extends ComicRepo {
-  private var list: Seq[Comic] = List()
+  private var list: Seq[Comic] = List(
+    Comic("XKCD", "TV Problems", DateTime.parse("2016-11-16"), "http://imgs.xkcd.com/comics/tv_problems.png", "http://xkcd.com/1760/")
+  )
 
   system.scheduler.schedule(0.seconds, 1.hour)(updateList)
 

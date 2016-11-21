@@ -1,0 +1,16 @@
+@import services.Comic
+
+@(comic: ComicWithShare)
+
+<meta name="description" content="Persentase pembicaraan, sentimen, dan trending calon Gubernur Pilkada DKI Jakarta 2017 dari sosial media disertai berita terkini dan terpopular Pilkada DKI">
+<meta name="keywords" content="">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="@{comic.comic.title}">
+<meta property="og:description" content="@{comic.comic.artist}">
+<meta property="og:image" content="@{comic.comic.imgUrl}">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="@{comic.comic.title}">
+<meta name="twitter:description" content="@{comic.comic.artist}">
+<meta name="twitter:image" content="@{comic.comic.imgUrl}">
